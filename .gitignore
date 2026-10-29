@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Virtual environment
+.venv/
+venv/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Local databases
+*.duckdb
+*.duckdb.wal
+*.db
+
+# Private source data and generated data
+data/raw/
+data/interim/
+data/processed/
+
+# Personal financial files
+*.pdf
+*.xlsx
+*.xls
+*_private.csv
+*_personal.csv
+
+# Generated reports and exports
+exports/
+output/
+reports/generated/
+
+# OS and editor files
+.DS_Store
+Thumbs.db
