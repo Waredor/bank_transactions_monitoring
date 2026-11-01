@@ -86,12 +86,8 @@ def filter_content_blocks(blocks: list, page_number: int) -> list:
         ValueError: if the marker text is not found in the page blocks
     """
     table_header_bottom = None
-    if page_number >= 1:
-        marker_text = "ОСТАТОК СРЕДСТВ\n"
 
-    else:
-        #marker_text = "Расшифровка операций\n"
-        marker_text = "ОСТАТОК СРЕДСТВ\n"
+    marker_text = "ОСТАТОК СРЕДСТВ\n"
         
     for block in blocks:
         if block[4] == marker_text:
@@ -210,16 +206,6 @@ def main() -> None:
 
     with pymupdf.open(pdf_path) as document:
         full_text = extract_all_pages_text(document)
-
-        # # temp
-        # page_count = document.page_count
-        # for page_number in range(page_count):
-        #     page = document.load_page(page_number)
-        #     blocks = page.get_text("blocks")
-        #     print(f"initial blocks for page {page_number + 1}: {len(blocks)}")
-
-        #     filtered_blocks = filter_content_blocks(blocks, page_number)
-        #     print(f"filtered blocks for page {page_number + 1}: {len(filtered_blocks)}")
 
     write_text_file(full_text, output_txt_path)
 
