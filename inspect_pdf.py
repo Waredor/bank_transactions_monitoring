@@ -1,11 +1,21 @@
 from pathlib import Path
-from collections import defaultdict
 import argparse
 import pymupdf
 
 
 def extract_page_text(document: pymupdf.Document, page_number: int, page_count: int, text_type="blocks") -> str:
-    """Extract text from PDF page"""
+    """
+    Exctract text from PDF page
+    Args:
+        document (pymupdf.Document): input pymupdf document
+        page_number (int): number of pdf page
+        page_count (int): total number of pages in pdf document
+        text_type (str): mode of .get_text() function 
+    
+    Returns:
+        page_text (str): text of pdf page
+    """
+        
     if 0 <= page_number < page_count:
         page = document.load_page(page_number)
         page_text = page.get_text(text_type)
@@ -18,6 +28,14 @@ def extract_page_text(document: pymupdf.Document, page_number: int, page_count: 
 
 
 def extract_all_pages_text(document: pymupdf.Document) -> str:
+    """
+    Exctract text from all pages of input PDF document
+    Args:
+        document (pymupdf.Document): input pymupdf document 
+    
+    Returns:
+        full_text (str): full text from input document
+    """
     page_count = document.page_count
     print(f"Number of pages: {page_count}")
 
@@ -29,9 +47,10 @@ def extract_all_pages_text(document: pymupdf.Document) -> str:
         
         filtered_page_text = filter_content_blocks(page_text, page_number)
         grouped_page_text = group_blocks_by_row(filtered_page_text)
+        filtered_grouped_page_text = filter_grouped_blocks(grouped_page_text)
 
         page_texts.append(
-            f"{separator}\n{grouped_page_text}"
+            f"{separator}\n{filtered_grouped_page_text}"
         )
 
     full_text = "\n".join(page_texts)
@@ -39,7 +58,15 @@ def extract_all_pages_text(document: pymupdf.Document) -> str:
 
 
 def write_text_file(full_text: str, output_txt_path: Path) -> None:
-    """Write text to TXT file"""
+    """
+    Write text to TXT file
+    Args:
+        full_text (str): full input text 
+        output_txt_path (Path): path to output TXT file
+    
+    Returns:
+        None
+    """
     with open(output_txt_path, mode="w", encoding="utf-8") as output_document:
         output_document.write(full_text)
         print("Text from PDF file was successfully written to TXT")
@@ -81,7 +108,15 @@ def filter_content_blocks(blocks: list, page_number: int) -> list:
 
 
 def group_blocks_by_row(filtered_blocks: list, tolerance: float = 0.01) -> list:
-    """Group PDF text blocks into table rows."""
+    """
+    Group PDF text blocks into table rows
+    Args:
+        filtered_blocks (list): list of filtered blocks
+        tolerance (int): tolerance between y coordinates in one group
+    
+    Returns:
+        grouped_blocks (list): list of grouped blocks
+    """
     if len(filtered_blocks) == 0:
         return []
 
@@ -123,7 +158,13 @@ def filter_grouped_blocks(
 
 
 def main() -> None:
-    """The main function of this script"""
+    """
+    ETL function of this script
+    Args:
+        None
+    Returns:
+        None
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "pdf_path",
