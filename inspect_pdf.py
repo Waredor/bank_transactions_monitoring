@@ -103,6 +103,25 @@ def group_blocks_by_row(filtered_blocks: list, tolerance: float = 0.01) -> list:
     return grouped_blocks
 
 
+def filter_grouped_blocks(
+        grouped_blocks: list, expected_group_size: int = 2
+) -> list:
+    """
+    Filter grouped content blocks
+    Args:
+        grouped_blocks (list): list of groups of tuples
+        expected_group_size (int): expected number of elements in groups
+    
+    Returns:
+        filtered_grouped_blocks (list): list of filtered groups of tuples
+    """
+    filtered_grouped_blocks = [
+        block for block in grouped_blocks if len(block) == expected_group_size
+    ]
+
+    return filtered_grouped_blocks
+
+
 def main() -> None:
     """The main function of this script"""
     parser = argparse.ArgumentParser()
