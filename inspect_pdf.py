@@ -1,13 +1,14 @@
 from pathlib import Path
+from collections import defaultdict
 import argparse
 import pymupdf
 
 
-def extract_page_text(document: pymupdf.Document, page_number: int, page_count: int, text_type: str ="text") -> str:
+def extract_page_text(document: pymupdf.Document, page_number: int, page_count: int, text_type="blocks") -> str:
     """Extract text from PDF page"""
     if 0 <= page_number < page_count:
         page = document.load_page(page_number)
-        page_text = page.get_text("blocks")
+        page_text = page.get_text(text_type)
         print(f"Page: {page_number} extracted successfully")
 
     else:
@@ -25,8 +26,12 @@ def extract_all_pages_text(document: pymupdf.Document) -> str:
     for page_number in range(page_count):
         separator = f"--- PAGE {page_number + 1} ---"
         page_text = extract_page_text(document=document, page_number=page_number, page_count=page_count)
+        
+        filtered_page_text = filter_content_blocks(page_text, page_number)
+        grouped_page_text = group_blocks_by_row(filtered_page_text)
+
         page_texts.append(
-            f"{separator}\n{page_text}"
+            f"{separator}\n{grouped_page_text}"
         )
 
     full_text = "\n".join(page_texts)
@@ -58,7 +63,8 @@ def filter_content_blocks(blocks: list, page_number: int) -> list:
         marker_text = "ОСТАТОК СРЕДСТВ\n"
 
     else:
-        marker_text = "Расшифровка операций\n"
+        #marker_text = "Расшифровка операций\n"
+        marker_text = "ОСТАТОК СРЕДСТВ\n"
         
     for block in blocks:
         if block[4] == marker_text:
@@ -72,6 +78,30 @@ def filter_content_blocks(blocks: list, page_number: int) -> list:
         raise ValueError(f"Can't filter blocks on page {page_number + 1}")
 
     return filtered_blocks
+
+
+def group_blocks_by_row(filtered_blocks: list, tolerance: float = 0.01) -> list:
+    """Group PDF text blocks into table rows."""
+    if len(filtered_blocks) == 0:
+        return []
+
+    sorted_blocks = sorted(filtered_blocks, key=lambda x: x[1])
+    grouped_blocks = []
+    current_group = []
+    current_y = sorted_blocks[0][1]
+    for block in sorted_blocks:
+        if abs(block[1] - current_y) <= tolerance:
+            current_group.append(block)
+        else:
+            grouped_blocks.append(current_group)
+            current_y = block[1]
+            current_group = []
+            current_group.append(block)
+
+    grouped_blocks.append(current_group)
+
+    return grouped_blocks
+
 
 def main() -> None:
     """The main function of this script"""
@@ -120,6 +150,16 @@ def main() -> None:
 
     with pymupdf.open(pdf_path) as document:
         full_text = extract_all_pages_text(document)
+
+        # # temp
+        # page_count = document.page_count
+        # for page_number in range(page_count):
+        #     page = document.load_page(page_number)
+        #     blocks = page.get_text("blocks")
+        #     print(f"initial blocks for page {page_number + 1}: {len(blocks)}")
+
+        #     filtered_blocks = filter_content_blocks(blocks, page_number)
+        #     print(f"filtered blocks for page {page_number + 1}: {len(filtered_blocks)}")
 
     write_text_file(full_text, output_txt_path)
 
