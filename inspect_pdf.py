@@ -153,6 +153,36 @@ def filter_grouped_blocks(
     return filtered_grouped_blocks
 
 
+def merge_operation_blocks(group: list) -> dict:
+    """
+    Merge blocks of one operation
+    Args:
+        group (list): a group of blocks
+    
+    Returns:
+        merged_blocks (dict): A dict with merged information of one operation
+    """
+    if len(group) != 2:
+        raise ValueError(
+            f"Expected number of elements in group is 2, but group has {len(group)} elements"
+        )
+    
+    if group[0][0] < group[1][0]:
+        description_text = group[0][4]
+        financial_data_text = group[1][4]
+
+    else:
+        description_text = group[1][4]
+        financial_data_text = group[0][4]
+
+    merged_blocks = {
+        "description": description_text,
+        "financial_data": financial_data_text
+    }
+
+    return merged_blocks
+
+
 def main() -> None:
     """
     ETL function of this script
