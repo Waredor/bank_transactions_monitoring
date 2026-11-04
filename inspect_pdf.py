@@ -6,6 +6,7 @@ import pymupdf
 def extract_page_text(document: pymupdf.Document, page_number: int, page_count: int, text_type="blocks") -> str:
     """
     Exctract text from PDF page
+    
     Args:
         document (pymupdf.Document): input pymupdf document
         page_number (int): number of pdf page
@@ -30,6 +31,7 @@ def extract_page_text(document: pymupdf.Document, page_number: int, page_count: 
 def extract_all_pages_text(document: pymupdf.Document) -> str:
     """
     Exctract text from all pages of input PDF document
+
     Args:
         document (pymupdf.Document): input pymupdf document 
     
@@ -65,6 +67,7 @@ def extract_all_pages_text(document: pymupdf.Document) -> str:
 def write_text_file(full_text: str, output_txt_path: Path) -> None:
     """
     Write text to TXT file
+
     Args:
         full_text (str): full input text 
         output_txt_path (Path): path to output TXT file
@@ -80,6 +83,7 @@ def write_text_file(full_text: str, output_txt_path: Path) -> None:
 def filter_content_blocks(blocks: list, page_number: int) -> list:
     """
     Filter content blocks
+
     Args:
         blocks (list): list of tuples with pdf info
         page_number (int): number of pdf page (starts from 0)
@@ -111,6 +115,7 @@ def filter_content_blocks(blocks: list, page_number: int) -> list:
 def group_blocks_by_row(filtered_blocks: list, tolerance: float = 0.01) -> list:
     """
     Group PDF text blocks into table rows
+
     Args:
         filtered_blocks (list): list of filtered blocks
         tolerance (int): tolerance between y coordinates in one group
@@ -144,6 +149,7 @@ def filter_grouped_blocks(
 ) -> list:
     """
     Filter grouped content blocks
+
     Args:
         grouped_blocks (list): list of groups of tuples
         expected_group_size (int): expected number of elements in groups
@@ -161,6 +167,7 @@ def filter_grouped_blocks(
 def merge_operation_blocks(group: list) -> dict:
     """
     Merge blocks of one operation
+
     Args:
         group (list): a group of blocks
     
