@@ -49,8 +49,13 @@ def extract_all_pages_text(document: pymupdf.Document) -> str:
         grouped_page_text = group_blocks_by_row(filtered_page_text)
         filtered_grouped_page_text = filter_grouped_blocks(grouped_page_text)
 
+        merged_grouped_page_text = []
+        for group in filtered_grouped_page_text:
+            merged_group = merge_operation_blocks(group)
+            merged_grouped_page_text.append(merged_group)
+
         page_texts.append(
-            f"{separator}\n{filtered_grouped_page_text}"
+            f"{separator}\n{merged_grouped_page_text}"
         )
 
     full_text = "\n".join(page_texts)
@@ -181,6 +186,45 @@ def merge_operation_blocks(group: list) -> dict:
     }
 
     return merged_blocks
+
+
+def parse_description(description: str) -> dict:
+    """
+    Parse description of financial operation
+
+    Args:
+        description (str): description of financial operation
+
+    Returns:
+        operation_fields (dict): dict of operation fields
+
+    Raises:
+        ValueError: If the description contains fewer than five lines.  
+    """
+    filtered_description = description
+
+    if description and description[-1] == "\n":
+        filtered_description = description[:-1]
+    
+    description_elements = filtered_description.split("\n")
+    if len(description_elements) < 5:
+        raise ValueError(
+            f"Not enough fields in description: expected at least 5 lines, but got {len(description_elements)}"
+        )
+
+    operation_date = description_elements[0]
+    processing_datetime = " ".join(description_elements[1:3])
+    operation_code = description_elements[3]
+    operation_description = " ".join(description_elements[4:])
+
+    operation_fields = {
+        "operation_date": operation_date,
+        "processing_datetime": processing_datetime,
+        "operation_code": operation_code,
+        "operation_description": operation_description 
+    }
+
+    return operation_fields
 
 
 def main() -> None:
