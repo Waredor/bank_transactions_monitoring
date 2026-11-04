@@ -1,6 +1,9 @@
-from pathlib import Path
 import argparse
 import pymupdf
+import decimal
+
+from pathlib import Path
+from decimal import Decimal
 
 
 def extract_page_text(document: pymupdf.Document, page_number: int, page_count: int, text_type="blocks") -> str:
@@ -269,6 +272,68 @@ def parse_financial_data(financial_data: str) -> dict:
 
     return financial_fields
 
+
+def normalize_amount(amount: str, is_operation: bool = False) -> Decimal:
+    """
+    Normalize an amount value and convert it to Decimal
+
+    Args:
+        amount (str): amount of financial operation
+        is_operation (bool): type of amount 
+            (operation amount when is_operation is True or balance after operation when is_operation is False)
+
+    Returns:
+        final_decimal_amount (Decimal): normalized amount
+
+    Raises:
+        ValueError: when input amount has incorrect format/ amount is not finite
+            or amount couldn't be converted to Decimal
+    """
+    if not amount or amount.isspace():
+        raise ValueError("Incorrect format of input amount")
+
+    preprocessed_amount = amount.replace("\xa0", "").replace(",", ".")
+
+    contains_whitespace = any(char.isspace() for char in preprocessed_amount)
+
+    if (not preprocessed_amount) or (contains_whitespace):
+        raise ValueError("Incorrect format of input amount")
+
+    try:
+        decimal_amount = Decimal(preprocessed_amount)
+    except decimal.InvalidOperation as e:
+        raise ValueError(
+            f"Couldn't convert amount {preprocessed_amount} to decimal due to exception:"
+        ) from e
+
+    if not decimal_amount.is_finite():
+        raise ValueError("Amount is not finite")
+
+    if is_operation:
+        if preprocessed_amount[0] == "-":
+            raise ValueError("Incorrect format of input amount")
+
+        if decimal_amount == Decimal("0"):
+            final_decimal_amount = Decimal("0")
+
+        elif preprocessed_amount[0] != "+":
+            final_decimal_amount = -decimal_amount
+
+        else:
+            final_decimal_amount = decimal_amount
+
+    else:
+        if preprocessed_amount[0] == "-" or preprocessed_amount[0] == "+":
+            raise ValueError("Incorrect format of input amount")
+        
+        if decimal_amount == Decimal("0"):
+            final_decimal_amount = Decimal("0")
+
+        else:
+            final_decimal_amount = decimal_amount
+
+    return final_decimal_amount
+        
 
 def main() -> None:
     """
