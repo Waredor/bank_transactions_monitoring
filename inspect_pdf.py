@@ -227,6 +227,42 @@ def parse_description(description: str) -> dict:
     return operation_fields
 
 
+def parse_financial_data(financial_data: str) -> dict:
+    """
+    Parse financial data of financial operation
+
+    Args:
+        financial_data (str): financial_data for a financial operation
+
+    Returns:
+        financial_fields (dict): dict of financial data fields
+
+    Raises:
+        ValueError: If the number of fields in financial_data != 2.  
+    """
+    filtered_financial_data = financial_data
+
+    if filtered_financial_data and filtered_financial_data[-1] == "\n":
+        filtered_financial_data = filtered_financial_data[:-1]
+
+    financial_data_elements = filtered_financial_data.split("\n")
+
+    if len(financial_data_elements) != 2:
+        raise ValueError(
+            f"Invalid number of lines in financial_data: expected 2 lines, but got {len(financial_data_elements)}"
+        )
+
+    operation_amount = financial_data_elements[0]
+    balance_after_operation = financial_data_elements[1]
+
+    financial_fields = {
+        "operation_amount": operation_amount,
+        "balance_after_operation": balance_after_operation
+    }
+
+    return financial_fields
+
+
 def main() -> None:
     """
     ETL function of this script
