@@ -6,7 +6,7 @@ import pymupdf
 def extract_page_text(document: pymupdf.Document, page_number: int, page_count: int, text_type="blocks") -> str:
     """
     Exctract text from PDF page
-    
+
     Args:
         document (pymupdf.Document): input pymupdf document
         page_number (int): number of pdf page
@@ -203,7 +203,7 @@ def parse_description(description: str) -> dict:
         description (str): description of financial operation
 
     Returns:
-        operation_fields (dict): dict of operation fields
+        description_fields (dict): dict of operation fields
 
     Raises:
         ValueError: If the description contains fewer than five lines.  
@@ -224,14 +224,14 @@ def parse_description(description: str) -> dict:
     operation_code = description_elements[3]
     operation_description = " ".join(description_elements[4:])
 
-    operation_fields = {
+    description_fields = {
         "operation_date": operation_date,
         "processing_datetime": processing_datetime,
         "operation_code": operation_code,
         "operation_description": operation_description 
     }
 
-    return operation_fields
+    return description_fields
 
 
 def parse_financial_data(financial_data: str) -> dict:
