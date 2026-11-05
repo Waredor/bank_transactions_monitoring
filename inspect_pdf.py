@@ -363,6 +363,24 @@ def create_single_operation(merged_operation: dict) -> dict:
     return operation
 
 
+def create_operation_list(grouped_list: list) -> list:
+    """
+    Create list of structured operations
+
+    Args:
+        grouped_list (list): input list of grouped data
+
+    Return:
+        operation_list (list): output list of structured operations
+    """
+    operation_list = []
+    for group in grouped_list:
+        single_operation_dict = create_single_operation(group)
+        operation_list.append(single_operation_dict)
+
+    return operation_list
+
+
 def main() -> None:
     """
     ETL function of this script
