@@ -31,23 +31,22 @@ def extract_page_text(document: pymupdf.Document, page_number: int, page_count: 
     return page_text
 
 
-def extract_all_pages_text(document: pymupdf.Document) -> str:
+def extract_all_operations(document: pymupdf.Document) -> list:
     """
-    Exctract text from all pages of input PDF document
+    Extract text from all pages of input PDF document
 
     Args:
         document (pymupdf.Document): input pymupdf document 
     
     Returns:
-        full_text (str): full text from input document
+        merged_pages (list): list of operations from input document
     """
     page_count = document.page_count
     print(f"Number of pages: {page_count}")
 
-    page_texts = []
+    merged_pages = []
 
     for page_number in range(page_count):
-        separator = f"--- PAGE {page_number + 1} ---"
         page_text = extract_page_text(document=document, page_number=page_number, page_count=page_count)
         
         filtered_page_text = filter_content_blocks(page_text, page_number)
@@ -59,12 +58,10 @@ def extract_all_pages_text(document: pymupdf.Document) -> str:
             merged_group = merge_operation_blocks(group)
             merged_grouped_page_text.append(merged_group)
 
-        page_texts.append(
-            f"{separator}\n{merged_grouped_page_text}"
-        )
+        preprocessed_operations_list = create_operation_list(merged_grouped_page_text)
+        merged_pages.extend(preprocessed_operations_list)
 
-    full_text = "\n".join(page_texts)
-    return full_text
+    return merged_pages
 
 
 def write_text_file(full_text: str, output_txt_path: Path) -> None:
@@ -433,9 +430,9 @@ def main() -> None:
     print(f"TXT path {output_txt_path} is checked successfully")
 
     with pymupdf.open(pdf_path) as document:
-        full_text = extract_all_pages_text(document)
+        full_list_of_operations = extract_all_operations(document)
 
-    write_text_file(full_text, output_txt_path)
+    write_text_file(str(full_list_of_operations), output_txt_path)
 
 if __name__ == "__main__":
     main()
