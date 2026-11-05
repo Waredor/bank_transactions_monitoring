@@ -333,7 +333,35 @@ def normalize_amount(amount: str, is_operation: bool = False) -> Decimal:
             final_decimal_amount = decimal_amount
 
     return final_decimal_amount
-        
+
+
+def create_single_operation(merged_operation: dict) -> dict:
+    """
+    Create dict with info of single operation
+    
+    Args:
+        merged_operation (dict): input dict from function merge_operation_blocks() with description and financial data of operation
+    
+    Returns:
+        operation (dict): parsed operation info
+    """
+    parsed_description = parse_description(merged_operation["description"])
+    parsed_financial_data = parse_financial_data(merged_operation["financial_data"])
+
+    normalized_operation_amount = normalize_amount(parsed_financial_data["operation_amount"], is_operation=True)
+    normalized_balance_after_operation = normalize_amount(parsed_financial_data["balance_after_operation"], is_operation=False)
+
+    operation = {
+        "operation_date": parsed_description["operation_date"],
+        "processing_datetime": parsed_description["processing_datetime"],
+        "operation_code": parsed_description["operation_code"],
+        "operation_description": parsed_description["operation_description"],
+        "operation_amount": normalized_operation_amount,
+        "balance_after_operation": normalized_balance_after_operation
+    }
+
+    return operation
+
 
 def main() -> None:
     """
