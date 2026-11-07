@@ -1,6 +1,7 @@
 import argparse
 import pymupdf
 import decimal
+import pandas as pd
 
 from pathlib import Path
 from decimal import Decimal
@@ -376,6 +377,34 @@ def create_operation_list(grouped_list: list) -> list:
         operation_list.append(single_operation_dict)
 
     return operation_list
+
+
+def create_operations_dataframe(all_operations_list: list) -> pd.DataFrame:
+    """
+    Create pandas dataframe with all operations
+
+    Args:
+        all_operations_list (list): list of preprocessed operations
+
+    Returns:
+        output_df (pd.DataFrame): pandas dataframe with operations
+
+    """
+    columns = [
+        "operation_date",
+        "processing_datetime",
+        "operation_code",
+        "operation_description",
+        "operation_amount",
+        "balance_after_operation"
+    ]
+    if not all_operations_list:
+        output_df = pd.DataFrame(columns=columns)
+        
+    else:
+        output_df = pd.DataFrame(all_operations_list, columns=columns)
+
+    return output_df
 
 
 def main() -> None:
