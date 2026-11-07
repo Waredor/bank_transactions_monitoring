@@ -400,7 +400,7 @@ def create_operations_dataframe(all_operations_list: list) -> pd.DataFrame:
     ]
     if not all_operations_list:
         output_df = pd.DataFrame(columns=columns)
-        
+
     else:
         output_df = pd.DataFrame(all_operations_list, columns=columns)
 
@@ -409,7 +409,7 @@ def create_operations_dataframe(all_operations_list: list) -> pd.DataFrame:
 
 def main() -> None:
     """
-    ETL function of this script
+    ETL function, which get input PDF path from CLI and export preprocessed dataframe to CSV
     Args:
         None
     Returns:
@@ -421,15 +421,9 @@ def main() -> None:
         type=Path,
         help="Path to the input PDF file"
     )
-    parser.add_argument(
-        "output_txt_path",
-        type=Path,
-        help="Path to the output TXT file"
-    )
 
     args = parser.parse_args()
     pdf_path = args.pdf_path
-    output_txt_path = args.output_txt_path
 
     if not pdf_path.exists():
         parser.error(f"Path {pdf_path} does not exist")
@@ -438,30 +432,19 @@ def main() -> None:
         parser.error(f"Path {pdf_path} is not a file")
 
     if pdf_path.suffix.lower() != ".pdf":
-        parser.error(f"File {pdf_path} has incorrect extension: {pdf_path.suffix}")
-
-    if not output_txt_path.parent.exists():
-        parser.error(
-            f"Path to parent directory {output_txt_path.parent} does not exist"
-        )
-
-    if output_txt_path.suffix.lower() != ".txt":
-        parser.error(
-            f"File {output_txt_path} has incorrect extension: {output_txt_path.suffix}"
-        )
-
-    if output_txt_path.exists() and not output_txt_path.is_file():
-        parser.error(
-            f"{output_txt_path} is not path to file"
-        )          
+        parser.error(f"File {pdf_path} has incorrect extension: {pdf_path.suffix}")        
 
     print(f"PDF path {pdf_path} is checked successfully")
-    print(f"TXT path {output_txt_path} is checked successfully")
 
     with pymupdf.open(pdf_path) as document:
         full_list_of_operations = extract_all_operations(document)
 
-    write_text_file(str(full_list_of_operations), output_txt_path)
+    operations_df = create_operations_dataframe(full_list_of_operations)
+    output_csv_path = pdf_path.with_suffix(".csv")
+    operations_df.to_csv(output_csv_path, index=False, encoding="utf-8-sig")
+
+    print(f"Output CSV path {output_csv_path} is created successfully")
+
 
 if __name__ == "__main__":
     main()
