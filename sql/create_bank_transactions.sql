@@ -5,4 +5,4 @@ CREATE TABLE IF NOT EXISTS bank_transactions (
     operation_description VARCHAR,
     operation_amount DECIMAL(38, 2),
     balance_after_operation DECIMAL(38, 2)
-)
+);

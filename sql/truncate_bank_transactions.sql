@@ -1,0 +1,1 @@
+TRUNCATE TABLE bank_transactions;
