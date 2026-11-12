@@ -74,6 +74,7 @@ def main() -> None:
 
     root_path = Path(__file__).resolve().parent.parent
     duckdb_path = root_path / "data" / "bank_transactions.duckdb"
+    parquet_path = duckdb_path.with_name("bank_transactions.parquet")
     duckdb_parent_dir = duckdb_path.resolve().parent
     create_bank_transactions_table_path = root_path / "sql" / "create_bank_transactions.sql"
     truncate_bank_transactions_table_path = root_path / "sql" / "truncate_bank_transactions.sql"
@@ -136,6 +137,8 @@ def main() -> None:
         except Exception:
             con.execute("ROLLBACK")
             raise
+
+        con.execute(f"COPY bank_transactions TO '{parquet_path}' (FORMAT parquet)")
 
         dataframe = con.execute(
             """
