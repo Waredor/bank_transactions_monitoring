@@ -1,0 +1,1 @@
+COPY bank_transactions TO ? (FORMAT parquet)

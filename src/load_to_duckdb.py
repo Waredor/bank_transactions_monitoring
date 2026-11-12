@@ -80,6 +80,7 @@ def main() -> None:
     truncate_bank_transactions_table_path = root_path / "sql" / "truncate_bank_transactions.sql"
     insert_into_bank_transactions_table_path = root_path / "sql" / "insert_into_bank_transactions.sql"
     count_bank_transactions_table_path = root_path / "sql" / "count_bank_transactions_table_rows.sql"
+    copy_bank_transactions_to_parquet_path = root_path / "sql" / "copy_bank_transactions_to_parquet.sql"
 
     check_input_path(
         path=duckdb_parent_dir,
@@ -102,6 +103,10 @@ def main() -> None:
         filetype=".sql"
     )
     check_input_path(
+        path=copy_bank_transactions_to_parquet_path,
+        filetype=".sql"
+    )
+    check_input_path(
         path=csv_path,
         filetype=".csv"
     )
@@ -110,6 +115,7 @@ def main() -> None:
     truncate_bank_transactions_sql_query = truncate_bank_transactions_table_path.read_text(encoding="utf-8")
     insert_into_bank_transactions_sql_query = insert_into_bank_transactions_table_path.read_text(encoding="utf-8")
     count_bank_transactions_sql_query = count_bank_transactions_table_path.read_text(encoding="utf-8")
+    copy_bank_transactions_sql_query = copy_bank_transactions_to_parquet_path.read_text(encoding="utf-8")
 
     with duckdb.connect(duckdb_path) as con:
         con.execute("INSTALL encodings; LOAD encodings")
@@ -132,7 +138,10 @@ def main() -> None:
             if table_rows == 0:
                 raise ValueError("Input CSV file is empty")
 
-            con.execute(f"COPY bank_transactions TO '{parquet_path}' (FORMAT parquet)")
+            con.execute(
+                copy_bank_transactions_sql_query,
+                [str(parquet_path)]
+            )
 
             con.execute("COMMIT")
 
