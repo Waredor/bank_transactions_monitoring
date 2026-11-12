@@ -132,13 +132,13 @@ def main() -> None:
             if table_rows == 0:
                 raise ValueError("Input CSV file is empty")
 
+            con.execute(f"COPY bank_transactions TO '{parquet_path}' (FORMAT parquet)")
+
             con.execute("COMMIT")
 
         except Exception:
             con.execute("ROLLBACK")
             raise
-
-        con.execute(f"COPY bank_transactions TO '{parquet_path}' (FORMAT parquet)")
 
         dataframe = con.execute(
             """
