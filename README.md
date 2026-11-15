@@ -105,6 +105,7 @@ bank_transactions_monitoring/
 │   ├── create_bank_transactions.sql
 │   ├── truncate_bank_transactions.sql
 │   ├── insert_into_bank_transactions.sql
+│   ├── truncate_bank_transactions.sql
 │   └── count_bank_transactions_table_rows.sql
 ├── src/
 │   ├── parse_bank_statement.py
