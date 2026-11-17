@@ -1,6 +1,6 @@
 # Bank Transactions Monitoring
 
-![alt text](image.png)
+![alt text](dashboard.jpg)
 
 ## Project Overview
 
