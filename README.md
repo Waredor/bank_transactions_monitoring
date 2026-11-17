@@ -1,5 +1,7 @@
 # Bank Transactions Monitoring
 
+![alt text](image.png)
+
 ## Project Overview
 
 **Bank Transactions Monitoring** is a personal data analytics project designed to process, store, and analyze personal bank transactions.
