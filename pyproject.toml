@@ -10,3 +10,10 @@ dependencies = [
     "pymupdf>=2.0",
     "pytest>=9.2.0"
 ]
+
+[tool.setuptools]
+packages = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
