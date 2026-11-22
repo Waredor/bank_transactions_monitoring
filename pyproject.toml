@@ -1,0 +1,12 @@
+[project]
+name = "bank_transactions_monitoring"
+version = "0.1.0"
+description = "A local application for bank transaction processing and analysis"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "duckdb>=2.0.0",
+    "pandas>=3.1.1",
+    "pymupdf>=2.0",
+    "pytest>=9.2.0"
+]
