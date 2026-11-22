@@ -6,7 +6,7 @@
 
 **Bank Transactions Monitoring** is a personal data analytics project designed to process, store, and analyze personal bank transactions.
 
-The project implements an end-to-end ETL pipeline that extracts transaction data from a Sberbank PDF statement, transforms it into a structured format, loads it into DuckDB, and exports the resulting dataset to Parquet for further analysis in Power BI.
+The project implements an end-to-end ETL pipeline that extracts transaction data from a Sberbank PDF statement, transforms it into a structured CSV file, loads it into DuckDB, and exports the resulting dataset to Parquet for further analysis in Power BI.
 
 An interactive Power BI dashboard provides insights into income, expenses, and net cash flow.
 
@@ -24,11 +24,11 @@ A synthetic transaction dataset is included for demonstration purposes, allowing
 ### 2. DuckDB Data Loader
 
 - Loads transaction data from CSV into DuckDB.
-- Uses SQL scripts for table creation, data truncation, and insertion.
+- Uses SQL scripts for table creation, data truncation, insertion, and validation.
 - Implements a full refresh loading strategy.
-- Uses database transactions to ensure atomicity.
+- Uses database transactions to protect existing database data during loading.
 - Validates the number of loaded records before committing changes.
-- Rolls back the transaction if an error occurs or the input dataset is empty, preserving the previously loaded data.
+- Rolls back database changes if an error occurs or the input dataset is empty.
 
 ### 3. Parquet Export
 
@@ -48,8 +48,16 @@ A synthetic transaction dataset is included for demonstration purposes, allowing
 
 - Includes a synthetic dataset with the same schema as the parser output.
 - Contains fictional transaction descriptions, operation codes, amounts, and account balances.
-- Is intended exclusively for dashboard demonstration and testing.
+- Is intended for dashboard demonstration and testing.
 - Does not contain real personal banking information.
+
+### 6. Development Environment
+
+- Uses `uv` for Python dependency management and virtual environment creation.
+- Defines project dependencies and development tools in `pyproject.toml`.
+- Uses `uv.lock` to ensure reproducible dependency installation.
+- Includes `pytest` for automated testing.
+- Includes `ruff` for code linting and formatting.
 
 ## Data Flow
 
@@ -84,14 +92,17 @@ The synthetic dataset can also be used as an alternative input for demonstrating
 
 | Technology | Purpose |
 |---|---|
-| Python | ETL development |
+| Python 3.11+ | ETL development |
 | PyMuPDF | PDF text extraction |
 | Pandas | Data processing and CSV generation |
 | DuckDB | Analytical database |
 | SQL | Database operations and data loading |
 | Parquet | Columnar data storage and data exchange |
-| Power Query (M) | Data source configuration and transformation |
+| Power Query (M) | Data source configuration |
 | Power BI | Data modeling and dashboard development |
+| uv | Dependency and virtual environment management |
+| pytest | Automated testing |
+| Ruff | Code linting and formatting |
 | Git | Version control |
 
 ## Project Structure
@@ -107,13 +118,16 @@ bank_transactions_monitoring/
 │   ├── create_bank_transactions.sql
 │   ├── truncate_bank_transactions.sql
 │   ├── insert_into_bank_transactions.sql
-│   ├── truncate_bank_transactions.sql
-│   └── count_bank_transactions_table_rows.sql
+│   ├── count_bank_transactions_table_rows.sql
+│   └── copy_bank_transactions_to_parquet.sql
 ├── src/
 │   ├── parse_bank_statement.py
 │   └── load_to_duckdb.py
 ├── tests/
 ├── .gitignore
+├── .python-version
+├── pyproject.toml
+├── uv.lock
 └── README.md
 ```
 
@@ -123,6 +137,12 @@ The following files are generated locally by `load_to_duckdb.py` and are not inc
 data/
 ├── bank_transactions.duckdb
 └── bank_transactions.parquet
+```
+
+The virtual environment is also generated locally:
+
+```text
+.venv/
 ```
 
 ## Data Schema
@@ -144,23 +164,26 @@ The current implementation uses a **full refresh** approach.
 
 Each loading run performs the following steps:
 
-1. Starts a database transaction.
+1. Starts a DuckDB database transaction.
 2. Truncates the existing `bank_transactions` table.
 3. Loads transactions from the input CSV file.
 4. Checks the number of records in the target table.
 5. Exports the resulting dataset to Parquet.
-6. Commits the transaction if loading and validation complete successfully.
-7. Rolls back the transaction if an error occurs or the input dataset is empty.
+6. Commits the database transaction if loading and validation complete successfully.
+7. Rolls back database changes if an error occurs or the input dataset is empty.
 
-This approach ensures that previously loaded database data is preserved if the new dataset cannot be loaded successfully.
+Database transactions protect the existing DuckDB table from unsuccessful loading operations.
+
+**Note:** The Parquet file is an external output artifact and is not covered by DuckDB transaction rollback. If an error occurs after the Parquet export, the file may not correspond to the final committed database state.
 
 ## Getting Started
 
 ### Prerequisites
 
+- Git
 - Python 3.11+
-- Required Python dependencies
-- Power BI Desktop (for opening and refreshing the dashboard)
+- uv
+- Power BI Desktop (optional, for opening and refreshing the dashboard)
 
 ### 1. Clone the Repository
 
@@ -169,15 +192,59 @@ git clone https://github.com/Waredor/bank_transactions_monitoring.git
 cd bank_transactions_monitoring
 ```
 
-### 2. Prepare the Input Dataset
+### 2. Install uv
+
+`uv` is used to manage Python versions, dependencies, and the project virtual environment.
+
+Follow the official installation instructions:
+
+https://docs.astral.sh/uv/getting-started/installation/
+
+Verify the installation:
+
+```bash
+uv --version
+```
+
+### 3. Set Up the Python Environment
+
+The repository contains:
+
+- `.python-version` — specifies the project Python version.
+- `pyproject.toml` — defines project metadata and dependencies.
+- `uv.lock` — locks exact dependency versions.
+
+Install Python 3.11 if it is not already available:
+
+```bash
+uv python install 3.11
+```
+
+Create the virtual environment and install all project dependencies:
+
+```bash
+uv sync
+```
+
+`uv sync` automatically creates the `.venv` virtual environment and installs both runtime and development dependencies.
+
+No manual virtual environment activation is required when using `uv run`.
+
+### 4. Prepare the Input Dataset
 
 There are two ways to prepare the input CSV file.
 
-**Option A: Use your own bank statement**
+**Option A: Use your own Sberbank statement**
 
 1. Export a Sberbank PDF statement for the required period.
-2. Run the statement parser.
-3. Use the generated CSV as input for the DuckDB loader.
+2. Run the statement parser:
+
+```bash
+uv run python src/parse_bank_statement.py path/to/statement.pdf
+```
+
+3. The parser generates a CSV file next to the source PDF.
+4. Use the generated CSV as input for the DuckDB loader.
 
 **Option B: Use the synthetic sample dataset**
 
@@ -189,13 +256,23 @@ data/sample/synthetic_bank_transactions.csv
 
 This dataset is intended for demonstration and does not contain real financial information.
 
-### 3. Run the ETL Pipeline
+### 5. Run the ETL Pipeline
 
-Run the existing ETL scripts to process the input dataset and generate the analytical database and Parquet file.
+Run the DuckDB loader and pass the input CSV path as a positional argument.
 
-The exact input file path must match the configuration expected by `load_to_duckdb.py`.
+For the synthetic dataset:
 
-After successful execution, the following files will be generated in the `data/` directory:
+```bash
+uv run python src/load_to_duckdb.py data/sample/synthetic_bank_transactions.csv
+```
+
+For a CSV generated by the parser:
+
+```bash
+uv run python src/load_to_duckdb.py path/to/statement.csv
+```
+
+After successful execution, the following files are generated in the `data/` directory:
 
 ```text
 data/
@@ -205,7 +282,9 @@ data/
 
 These files are generated locally and are not tracked in Git.
 
-### 4. Configure the Power BI Data Source
+**Note:** The first execution may require an internet connection because the loader installs or loads the DuckDB `encodings` extension.
+
+### 6. Configure the Power BI Data Source
 
 The Power BI report uses the generated Parquet file as its data source.
 
@@ -221,6 +300,28 @@ When opening the report on another machine:
 
 The Parquet file must be generated before refreshing the report.
 
+### 7. Run Development Tools
+
+The project includes development dependencies for testing and code quality checks.
+
+Run automated tests:
+
+```bash
+uv run pytest
+```
+
+Check the code with Ruff:
+
+```bash
+uv run ruff check .
+```
+
+Format the code:
+
+```bash
+uv run ruff format .
+```
+
 ## Demo Dataset
 
 The repository includes a synthetic dataset located in `data/sample/`.
@@ -235,6 +336,7 @@ It allows users to reproduce the dashboard without providing their own bank stat
 - [ ] Add automated ETL tests using `pytest`.
 - [ ] Develop additional analytical data models and extend dashboard capabilities.
 - [ ] Improve the data loading pipeline and consider incremental loading.
+- [ ] Improve the reliability of Parquet export and database consistency.
 - [ ] Expand support for additional bank statement formats.
 
 ## Current Limitations
@@ -244,11 +346,12 @@ It allows users to reproduce the dashboard without providing their own bank stat
 - Transaction categorization has not yet been implemented.
 - The data loader uses full refresh rather than incremental loading.
 - Automated ETL tests have not yet been implemented.
+- The Parquet export is not transactionally coupled with the DuckDB database transaction.
 - The Power BI report requires a locally generated Parquet file and a correctly configured `ProjectPath` parameter.
 
 ## Project Status
 
-**ETL pipeline and initial Power BI dashboard implemented.**
+**ETL pipeline, dependency management, and initial Power BI dashboard implemented.**
 
 The project currently supports extracting transactions from a Sberbank PDF statement, transforming and loading the data into DuckDB, exporting the resulting dataset to Parquet, and analyzing financial activity through an interactive Power BI dashboard.
 
