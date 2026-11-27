@@ -1,33 +1,42 @@
 import argparse
 import pymupdf
 import decimal
+import logging
+import sys
 import pandas as pd
 
 from pathlib import Path
 from decimal import Decimal
 
 
-def extract_page_text(document: pymupdf.Document, page_number: int, page_count: int, text_type="blocks") -> str:
+logger = logging.getLogger(__name__)
+
+
+def extract_page_text(
+        document: pymupdf.Document, 
+        page_number: int, 
+        text_type: str = "blocks"
+) -> list:
     """
     Exctract text from PDF page
 
     Args:
         document (pymupdf.Document): input pymupdf document
         page_number (int): number of pdf page
-        page_count (int): total number of pages in pdf document
         text_type (str): mode of .get_text() function 
     
     Returns:
-        page_text (str): text of pdf page
+        page_text (list): text of pdf page in blocks
     """
+
+    page_count = document.page_count
         
     if 0 <= page_number < page_count:
         page = document.load_page(page_number)
         page_text = page.get_text(text_type)
-        print(f"Page: {page_number} extracted successfully")
 
     else:
-        raise ValueError(f"Page number {page_number + 1} is incorrect")
+        raise ValueError
 
     return page_text
 
@@ -43,51 +52,79 @@ def extract_all_operations(document: pymupdf.Document) -> list:
         merged_pages (list): list of operations from input document
     """
     page_count = document.page_count
-    print(f"Number of pages: {page_count}")
+    logger.info("Number of pages: %s", page_count)
 
     merged_pages = []
 
     for page_number in range(page_count):
-        page_text = extract_page_text(document=document, page_number=page_number, page_count=page_count)
-        
-        filtered_page_text = filter_content_blocks(page_text, page_number)
+        try:
+            page_text = extract_page_text(
+                document=document, 
+                page_number=page_number
+            )
+            logger.info("Page: %s extracted successfully", page_number + 1)
+        except Exception:
+            logger.exception("Failed to extract page %s", page_number + 1)
+            continue
+
+        try:
+            filtered_page_text = filter_content_blocks(
+                blocks=page_text
+            )
+            logger.debug("Content on page %s filtered successfuly", page_number + 1)
+        except ValueError:
+            logger.exception("Can't filter blocks on page %s", page_number + 1)
+            continue
+
         grouped_page_text = group_blocks_by_row(filtered_page_text)
+        logger.debug("Content on page %s grouped successfuly", page_number + 1)
+
         filtered_grouped_page_text = filter_grouped_blocks(grouped_page_text)
+        logger.debug(
+            "Content on page %s preprocessed successfuly. Total groups: %s",
+            page_number + 1,
+            len(filtered_grouped_page_text)
+        )
 
         merged_grouped_page_text = []
-        for group in filtered_grouped_page_text:
-            merged_group = merge_operation_blocks(group)
+        for index, group in enumerate(filtered_grouped_page_text):
+            try:
+                merged_group = merge_operation_blocks(group)
+            except ValueError:
+                logger.exception(
+                    "Group %s on page %s is incorrect",
+                    index + 1,
+                    page_number + 1
+                )
+                continue
+
             merged_grouped_page_text.append(merged_group)
+            logger.debug(
+                "Content on page %s group %s merged successfuly",
+                page_number + 1,
+                index + 1
+            )
 
         preprocessed_operations_list = create_operation_list(merged_grouped_page_text)
+
         merged_pages.extend(preprocessed_operations_list)
+        logger.info(
+            "Page %s processed. Operations extracted: %s",
+            page_number + 1,
+            len(preprocessed_operations_list)
+        )
 
     return merged_pages
 
 
-def write_text_file(full_text: str, output_txt_path: Path) -> None:
-    """
-    Write text to TXT file
-
-    Args:
-        full_text (str): full input text 
-        output_txt_path (Path): path to output TXT file
-    
-    Returns:
-        None
-    """
-    with open(output_txt_path, mode="w", encoding="utf-8") as output_document:
-        output_document.write(full_text)
-        print("Text from PDF file was successfully written to TXT")
-
-
-def filter_content_blocks(blocks: list, page_number: int) -> list:
+def filter_content_blocks(
+        blocks: list
+) -> list:
     """
     Filter content blocks
 
     Args:
         blocks (list): list of tuples with pdf info
-        page_number (int): number of pdf page (starts from 0)
     
     Returns:
         filtered_blocks (list): list of filtered blocks with only operations content
@@ -108,12 +145,15 @@ def filter_content_blocks(blocks: list, page_number: int) -> list:
         filtered_blocks = [block for block in blocks if block[1] > table_header_bottom]
 
     else:
-        raise ValueError(f"Can't filter blocks on page {page_number + 1}")
+        raise ValueError
 
     return filtered_blocks
 
 
-def group_blocks_by_row(filtered_blocks: list, tolerance: float = 0.01) -> list:
+def group_blocks_by_row(
+        filtered_blocks: list, 
+        tolerance: float = 0.01
+) -> list:
     """
     Group PDF text blocks into table rows
 
@@ -124,7 +164,7 @@ def group_blocks_by_row(filtered_blocks: list, tolerance: float = 0.01) -> list:
     Returns:
         grouped_blocks (list): list of grouped blocks
     """
-    if len(filtered_blocks) == 0:
+    if not filtered_blocks:
         return []
 
     sorted_blocks = sorted(filtered_blocks, key=lambda x: x[1])
@@ -373,7 +413,11 @@ def create_operation_list(grouped_list: list) -> list:
     """
     operation_list = []
     for group in grouped_list:
-        single_operation_dict = create_single_operation(group)
+        try:
+            single_operation_dict = create_single_operation(group)
+        except ValueError:
+            logger.exception("Couldn't process group %s", group)
+            continue
         operation_list.append(single_operation_dict)
 
     return operation_list
@@ -415,6 +459,11 @@ def main() -> None:
     Returns:
         None
     """
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+    )
+
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "pdf_path",
@@ -434,16 +483,31 @@ def main() -> None:
     if pdf_path.suffix.lower() != ".pdf":
         parser.error(f"File {pdf_path} has incorrect extension: {pdf_path.suffix}")        
 
-    print(f"PDF path {pdf_path} is checked successfully")
+    logger.info("PDF path %s is checked successfully", pdf_path)
 
-    with pymupdf.open(pdf_path) as document:
-        full_list_of_operations = extract_all_operations(document)
+    try:
+        with pymupdf.open(pdf_path) as document:
+            full_list_of_operations = extract_all_operations(document=document)
+    
+    except Exception:
+        logger.exception("Couldn't extract operations from file")
+        sys.exit(1)
 
-    operations_df = create_operations_dataframe(full_list_of_operations)
+    try:
+        operations_df = create_operations_dataframe(full_list_of_operations)
+    except Exception:
+        logger.exception("Couldn't create operations dataframe")
+        sys.exit(1)
+
     output_csv_path = pdf_path.with_suffix(".csv")
-    operations_df.to_csv(output_csv_path, index=False, encoding="utf-8-sig")
 
-    print(f"Output CSV path {output_csv_path} is created successfully")
+    try:
+        operations_df.to_csv(output_csv_path, index=False, encoding="utf-8-sig")
+    except Exception:
+        logger.exception("Couldn't export dataframe to CSV")
+        sys.exit(1)
+
+    logger.info("Output CSV path %s is created successfully", output_csv_path)
 
 
 if __name__ == "__main__":
