@@ -71,20 +71,40 @@ def extract_all_operations(document: pymupdf.Document) -> list:
             filtered_page_text = filter_content_blocks(
                 blocks=page_text
             )
-            logger.debug("Content on page %s filtered successfuly", page_number + 1)
+            logger.debug(
+                "Page %s: content blocks filtered. Input: %s, output: %s",
+                page_number + 1,
+                len(page_text),
+                len(filtered_page_text)
+            )
         except ValueError:
             logger.exception("Can't filter blocks on page %s", page_number + 1)
             continue
 
         grouped_page_text = group_blocks_by_row(filtered_page_text)
-        logger.debug("Content on page %s grouped successfuly", page_number + 1)
+        logger.debug(
+            "Content on page %s grouped successfuly. Input blocks: %s. Output groups %s", 
+            page_number + 1,
+            len(filtered_page_text),
+            len(grouped_page_text)
+        )
 
         filtered_grouped_page_text = filter_grouped_blocks(grouped_page_text)
         logger.debug(
-            "Content on page %s preprocessed successfuly. Total groups: %s",
+            "Content on page %s preprocessed successfuly. Total input groups: %s. Total output groups %s",
             page_number + 1,
+            len(grouped_page_text),
             len(filtered_grouped_page_text)
         )
+
+        skipped_groups = len(grouped_page_text) - len(filtered_grouped_page_text)
+
+        if skipped_groups > 0:
+            logger.warning(
+                "Page %s: skipped %s groups with unexpected size",
+                page_number + 1,
+                skipped_groups
+            )
 
         merged_grouped_page_text = []
         for index, group in enumerate(filtered_grouped_page_text):
